@@ -29,7 +29,7 @@ const getUserWithEmail = function(email) {
   WHERE email=$1;
   `, [email])
   .then(res => res.rows[0])
-  .catch(err=>(err));
+  .catch(err=> err);
 }
 exports.getUserWithEmail = getUserWithEmail;
 
@@ -45,7 +45,7 @@ const getUserWithId = function(id) {
   WHERE id=$1;
   `, [id])
   .then(res => res.rows[0])
-  .catch(err=>(err));
+  .catch(err=> err);
 }
 exports.getUserWithId = getUserWithId;
 
@@ -67,7 +67,7 @@ const addUser =  function(user) {
   RETURNING *;
   `, [user.name, user.email, user.password])
   .then(res => res.rows[0])
-  .catch(err=>(err));
+  .catch(err=> err);
 
 }
 exports.addUser = addUser;
@@ -80,8 +80,20 @@ exports.addUser = addUser;
  * @return {Promise<[{}]>} A promise to the reservations.
  */
 const getAllReservations = function(guest_id, limit = 10) {
-  return getAllProperties(null, 2);
-}
+  return client.query(`
+  SELECT reservations.*, properties.*, AVG(rating)
+  FROM  reservations 
+  JOIN properties ON properties.id = reservations.property_id
+  JOIN property_reviews ON reservations.id = reservation_id
+  WHERE end_date < now()::date AND reservations.guest_id = $1
+  GROUP BY reservations.id, properties.id
+  ORDER BY start_date
+  LIMIT $2;
+  `, [guest_id, limit])
+  .then(res => res.rows)
+  .catch(err => err);
+
+  }
 exports.getAllReservations = getAllReservations;
 
 /// Properties
@@ -99,7 +111,7 @@ const getAllProperties = function(options, limit = 10) {
   LIMIT $1
   `, [limit])
   .then(res => res.rows)
-  .catch(err=>(err));
+  .catch(err=> err);
 }
 exports.getAllProperties = getAllProperties;
 
