@@ -1,19 +1,4 @@
-const properties = require('./json/properties.json');
-const users = require('./json/users.json');
-const pg = require('pg');
-const Client = pg.Client;
-
-
-const pool = {
-  user: 'vagrant',
-  password: '123',
-  host: 'localhost',
-  database: 'lightbnb'
-};
-
-const client = new Client(pool);
-
-client.connect();
+const db = require('../db')
 
 /// Users
 
@@ -23,7 +8,7 @@ client.connect();
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithEmail = function(email) {
-  return client.query(`
+  return db.query(`
   SELECT *
   FROM users
   WHERE email=$1;
@@ -39,11 +24,7 @@ exports.getUserWithEmail = getUserWithEmail;
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithId = function(id) {
-  return client.query(`
-  SELECT *
-  FROM users
-  WHERE id=$1;
-  `, [id])
+  return db.query(`SELECT * FROM users WHERE id=$1;`, [id])
   .then(res => res.rows[0])
   .catch(err=> err);
 }
@@ -56,7 +37,7 @@ exports.getUserWithId = getUserWithId;
  * @return {Promise<{}>} A promise to the user.
  */
 const addUser =  function(user) {
-  return client.query(`
+  return db.query(`
   INSERT INTO users(name, email, password)
   VALUES ($1, $2, $3)
   RETURNING *;
@@ -75,7 +56,7 @@ exports.addUser = addUser;
  * @return {Promise<[{}]>} A promise to the reservations.
  */
 const getAllReservations = function(guest_id, limit = 10) {
-  return client.query(`
+  return db.query(`
   SELECT reservations.*, properties.*, AVG(rating)
   FROM  reservations 
   JOIN properties ON properties.id = reservations.property_id
@@ -152,9 +133,7 @@ const getAllProperties = function(options, limit = 10) {
     LIMIT $${queryParams.length};
   `;
 
-  // console.log(queryString, queryParams);
-
-  return client.query(queryString, queryParams)
+  return db.query(queryString, queryParams)
     .then(res => res.rows);
 
 }
@@ -167,7 +146,7 @@ exports.getAllProperties = getAllProperties;
  * @return {Promise<{}>} A promise to the property.
  */
 const addProperty = function(property) {
-  return client.query(`
+  return db.query(`
     INSERT INTO properties(owner_id, title, description, thumbnail_photo_url, cover_photo_url, cost_per_night, parking_spaces, number_of_bathrooms, number_of_bedrooms, country, street, city, province, post_code)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
     RETURNING *;
@@ -187,6 +166,5 @@ const addProperty = function(property) {
       property.post_code])
   .then(res => res.rows[0])
   .catch(err=> err);
-
 }
 exports.addProperty = addProperty;
